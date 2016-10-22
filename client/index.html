@@ -1,0 +1,168 @@
+<!doctype html>
+<html ng-app="alexTradeApp">
+    <head>
+        <title>My Trade</title>
+        <style type="text/css">
+            table { border: 1px solid #666; width: 40%; }
+            th { background: #f8f8f8; font-weight: bold; padding: 2px; }
+            body { margin : 40px }
+            div { margin-bottom: 40px }
+        </style>
+    </head>    
+    <body ng-controller="AppCtrl">
+        <div id="wallet">
+            <label>My Wallet : {{user.wallet}}</label>
+            <br>
+            <input ng-model="amount" type="integer" required ng-minlength="1" ng-maxlength="5" />
+            <input type="button" ng-click="addCash(amount)" value="Add" />
+            <input type="button" ng-click="removeCash(amount)" value="Remove" />
+        </div>
+        <div id="sharesValue">
+            <div><label>Shares value : {{user.sharesValue}}</label></div>
+        </div>
+        <div id="myShares">
+            <label>My Shares : {{user.shares | mySharesFilter}}</label>
+        </div>
+        <div id="availableShares">
+            <label>Shares available : </label>
+            <table>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                </tr>
+                <tr ng-repeat="share in shares">
+                    <td>{{share.id}}</td>
+                    <td>{{share.name}}</td>
+                    <td>{{share.price}}</td>
+                </tr>
+            </table>
+        </div>
+        <div id="buySell">
+            <div>
+                <label>Symbol : </label>
+                <input ng-model="share.id" type="text" required ng-minlength="1" ng-maxlength="5" />
+                <label>Quantity : </label>
+                <input ng-model="share.quantity" type="text" required ng-minlength="1" ng-maxlength="5" />
+                <input type="button" ng-click="buyShares(share)" value="Buy" />
+                <input type="button" ng-click="sellShares(share)" value="Sell" />
+            </div>
+        </div>
+        <div id="error" class="errror">{{error}}</div>
+    </body>
+    
+    <script type="text/javascript"
+		src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
+    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+    
+    <script>
+        // Angular app
+        var alexTradeApp = angular.module("alexTradeApp", []);
+
+        // Angular controller of the app
+        alexTradeApp.controller('AppCtrl', ['$scope', 'HttpService', function($scope, HttpService) {
+            // Init of the user data
+            HttpService.getUser().then(function (rep) {
+                $scope.user = rep.data.user;
+            });
+            
+            // Init of the socket and listenning to yahooUpdate event
+            var socket = io.connect();
+            socket.on("yahooUpdate", function (shares) {
+                $scope.shares = shares;
+            });
+            
+            $scope.addCash = function (amount) {
+                HttpService.addCash(amount).then( function (rep) {
+                    $scope.user = rep.data.user;                             
+                });
+            };
+            
+            $scope.removeCash = function (amount) {
+                HttpService.removeCash(amount).then( function (rep) {
+                    $scope.user = rep.data.user;                             
+                });
+            };
+            
+            $scope.buyShares = function (share) {
+                HttpService.buyShares(share).then( function (rep) {
+                    // Enough money ?
+                    if(rep.data.error) {
+                        $scope.error = rep.data.error;
+                        setTimeout(function () {
+                            $scope.error = "";
+                        }, 3000);
+                    }
+                    else {
+                        $scope.user = rep.data.user;
+                    }                            
+                });
+            };
+            
+            $scope.sellShares = function (share) {
+                HttpService.sellShares(share).then( function (rep) {
+                    $scope.user = rep.data.user;                             
+                });
+            };
+        
+        }]);
+        
+        // Angular service of the app
+        alexTradeApp.service('HttpService', function($http){
+    
+            var baseApiUrl = "http://localhost:8080/api";
+
+            this.getUser = function () {
+                return $http({
+                    method: 'GET',
+                    url: baseApiUrl + '/user'
+                });
+            };
+
+            this.addCash = function (cash) {
+                return $http({
+                    method: 'POST',
+                    url: baseApiUrl + '/cash',
+                    data: {cash: cash}
+                });
+            };
+
+            this.removeCash = function (cash) {
+                return $http({
+                    method: 'PUT',
+                    url: baseApiUrl + '/cash',
+                    data: {cash: cash}
+                });
+            };
+            
+            this.buyShares = function (share) {
+                return $http({
+                    method: 'POST',
+                    url: baseApiUrl + '/shares',
+                    data: {id: share.id, quantity: share.quantity}
+                });
+            };
+            
+            this.sellShares = function (share) {
+                return $http({
+                    method: 'PUT',
+                    url: baseApiUrl + '/shares',
+                    data: {id: share.id, quantity: share.quantity}
+                });
+            };
+    
+        });
+        
+        // Angulat filter to display the user's shares
+        alexTradeApp.filter('mySharesFilter', function () {
+            return function (shares) {
+                var display = "";
+                for (prop in shares){
+                    display += prop + ":" + shares[prop];
+                    display += " ";
+                }
+                return display;
+            };
+        });
+    </script>
+</html>

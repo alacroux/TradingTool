@@ -1,0 +1,14 @@
+{
+  "name": "alex",
+  "version": "1.0.0",
+  "main": "app.js",
+  "dependencies": {
+    "express": "latest",
+    "socket.io": "1.5.0",
+    "request": "latest",
+    "body-parser": "~1.0.1",
+    "underscore": "latest",
+    "csvtojson": "latest"
+  },
+  "private": true
+}
