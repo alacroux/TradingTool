@@ -70,6 +70,7 @@
             var socket = io.connect();
             socket.on("yahooUpdate", function (shares) {
                 $scope.shares = shares;
+                $scope.$apply();
             });
             
             $scope.addCash = function (amount) {

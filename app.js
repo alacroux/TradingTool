@@ -43,7 +43,7 @@ router.route('/user')
     });
 
 app.get('/', function(req, res){
-    res.sendfile(__dirname + '/client/index.html');
+    res.sendFile(__dirname + '/client/index.html');
 });
 
 http.listen(8080, function(){
